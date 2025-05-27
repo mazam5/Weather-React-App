@@ -29,7 +29,6 @@ const useInput = () => {
   // 2. Define a submit handler.
   async function onSubmit(values: z.infer<typeof formSchema>) {
     console.log("Form submitted with values:", values);
-    // get the current weather data from the API
 
     await axios
       .get(import.meta.env.VITE_API_BASE_URL + "weather", {
@@ -43,6 +42,10 @@ const useInput = () => {
         return res.data;
       })
       .then((data) => {
+        if (data.cod === "404") {
+          console.error("City not found:", data.message);
+          dispatch(setError("City not found"));
+        }
         console.log("Weather data received:", data);
         dispatch(setWeatherData(data));
         localStorage.setItem("weatherData", JSON.stringify(data));
@@ -50,9 +53,8 @@ const useInput = () => {
         return data;
       })
       .catch((error) => {
-        console.error("Error fetching weather data:", error);
-        dispatch(setError("Failed to fetch weather data. Please try again."));
-        return null;
+        console.error("City not found:", error);
+        dispatch(setError("City not found"));
       });
     await axios
       .get(import.meta.env.VITE_API_BASE_URL + "forecast", {
@@ -73,9 +75,8 @@ const useInput = () => {
         return data;
       })
       .catch((error) => {
-        console.error("Error fetching forecast data:", error);
-        dispatch(setError("Failed to fetch forecast data. Please try again."));
-        return null;
+        console.error("City not found:", error);
+        dispatch(setError("City not found"));
       });
     form.reset({
       cityName: "",
