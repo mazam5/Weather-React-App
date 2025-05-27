@@ -1,0 +1,38 @@
+#app {
+  padding: 10px;
+  width: 60%;
+  border: 1px solid #ccc;
+  border-radius: 15px;
+  margin: 0 auto;
+  height: 80dvh;
+  margin: 10px auto;
+}
+#app #navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  border-bottom: 1px solid #ccc;
+}
+
+#app #navbar h1 {
+  font-size: 1.5rem;
+  margin: 0;
+  text-align: center;
+}
+
+@media (max-width: 600px) {
+  #app {
+    width: 90%;
+  }
+  #app #navbar h1 {
+    font-size: 1.2rem;
+  }
+  #app #navbar {
+    flex-direction: column;
+    align-items: center;
+  }
+  #app #navbar h1 {
+    margin-bottom: 10px;
+  }
+}
