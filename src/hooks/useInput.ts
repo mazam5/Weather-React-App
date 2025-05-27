@@ -1,12 +1,15 @@
 import { useAppDispatch } from "@/app/hooks";
 import {
+  resetWeatherDisplay,
   setError,
   setForecastData,
   setWeatherData,
 } from "@/components/weather-display/displaySlice";
 import { zodResolver } from "@hookform/resolvers/zod";
 import axios from "axios";
+import { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
+import { DateTime } from "luxon";
 import { z } from "zod";
 
 const formSchema = z.object({
@@ -16,8 +19,8 @@ const formSchema = z.object({
 
 const useInput = () => {
   const dispatch = useAppDispatch();
+  const latestValues = useRef<z.infer<typeof formSchema> | null>(null);
 
-  // 1. Define your form.
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -26,67 +29,99 @@ const useInput = () => {
     },
   });
 
-  // 2. Define a submit handler.
-  async function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log("Form submitted with values:", values);
+  const convertToLocalTime = (
+    timestamp: number,
+    timezoneOffset: number
+  ): string => {
+    return DateTime.fromSeconds(timestamp, { zone: "utc" })
+      .plus({
+        seconds: timezoneOffset,
+      })
+      .toLocaleString(DateTime.DATETIME_MED_WITH_SECONDS);
+  };
 
-    await axios
-      .get(import.meta.env.VITE_API_BASE_URL + "weather", {
-        params: {
-          q: values.cityName,
-          units: values.units,
-          appid: import.meta.env.VITE_API_KEY,
-        },
-      })
-      .then((res) => {
-        return res.data;
-      })
-      .then((data) => {
-        if (data.cod === "404") {
-          console.error("City not found:", data.message);
-          dispatch(setError("City not found"));
+  const fetchWeatherData = async (values: z.infer<typeof formSchema>) => {
+    try {
+      const weatherRes = await axios.get(
+        `${import.meta.env.VITE_API_BASE_URL}weather`,
+        {
+          params: {
+            q: values.cityName,
+            units: values.units,
+            appid: import.meta.env.VITE_API_KEY,
+          },
         }
-        console.log("Weather data received:", data);
-        dispatch(setWeatherData(data));
-        localStorage.setItem("weatherData", JSON.stringify(data));
-        dispatch(setError(null));
-        return data;
-      })
-      .catch((error) => {
-        console.error("City not found:", error);
+      );
+
+      const weatherData = weatherRes.data;
+      if (weatherData.cod === "404") {
         dispatch(setError("City not found"));
-      });
-    await axios
-      .get(import.meta.env.VITE_API_BASE_URL + "forecast", {
-        params: {
-          q: values.cityName,
-          units: values.units,
-          appid: import.meta.env.VITE_API_KEY,
-        },
-      })
-      .then((res) => {
-        return res.data;
-      })
-      .then((data) => {
-        console.log("Forecast data received:", data);
-        dispatch(setForecastData(data));
-        localStorage.setItem("forecastData", JSON.stringify(data));
-        dispatch(setError(null));
-        return data;
-      })
-      .catch((error) => {
-        console.error("City not found:", error);
-        dispatch(setError("City not found"));
-      });
-    form.reset({
-      cityName: "",
-      units: "metric",
-    });
-  }
-  // 3. Return the form methods and the submit handler.
+        return;
+      }
+      dispatch(resetWeatherDisplay());
+      dispatch(setWeatherData(weatherData));
+      localStorage.setItem("weatherData", JSON.stringify(weatherData));
+      dispatch(setError(null));
+    } catch (error) {
+      console.error("Weather fetch error:", error);
+      dispatch(setError("City not found"));
+    }
+
+    try {
+      const forecastRes = await axios.get(
+        `${import.meta.env.VITE_API_BASE_URL}forecast`,
+        {
+          params: {
+            q: values.cityName,
+            units: values.units,
+            appid: import.meta.env.VITE_API_KEY,
+          },
+        }
+      );
+
+      const forecastData = forecastRes.data;
+      dispatch(setForecastData(forecastData));
+      localStorage.setItem("forecastData", JSON.stringify(forecastData));
+      dispatch(setError(null));
+    } catch (error) {
+      console.error("Forecast fetch error:", error);
+      dispatch(setError("City not found"));
+    }
+  };
+
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    latestValues.current = values;
+    await fetchWeatherData(values);
+    form.reset({ cityName: "", units: "metric" });
+  };
+
+  useEffect(() => {
+    const localWeatherData = localStorage.getItem("weatherData");
+    const localForecastData = localStorage.getItem("forecastData");
+
+    if (localWeatherData) {
+      dispatch(setWeatherData(JSON.parse(localWeatherData)));
+    }
+
+    if (localForecastData) {
+      dispatch(setForecastData(JSON.parse(localForecastData)));
+    }
+  }, [dispatch]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (latestValues.current) {
+        fetchWeatherData(latestValues.current);
+      }
+    }, 30000); // Every 30 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
   return {
     form,
     onSubmit,
+    convertToLocalTime,
   };
 };
 

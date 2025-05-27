@@ -1,12 +1,14 @@
 import { useAppSelector } from "@/app/hooks";
 import { Cloud, CloudDrizzle, RefreshCw, Sun, Wind } from "lucide-react";
-import "./WeatherDisplay.css";
 import { useState } from "react";
 import { Button } from "../ui/button";
+import "./WeatherDisplay.css";
+import useInput from "@/hooks/useInput";
 
 const WeatherDisplay = () => {
   const weatherState = useAppSelector((state) => state.weather);
   const { weatherData, forecastData, error, isLoading } = weatherState;
+  const { convertToLocalTime } = useInput();
 
   const [isCelsius, setIsCelsius] = useState(true);
 
@@ -29,10 +31,12 @@ const WeatherDisplay = () => {
               <div className="place-time">
                 <div>{weatherData.name}</div>
                 <div>
-                  {new Date(weatherData.dt * 1000).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
+                  {
+                    convertToLocalTime(
+                      weatherData.dt,
+                      weatherData.timezone
+                    ).split(",")[2]
+                  }
                 </div>
                 <Button className="temp-toggle-button" onClick={toggleTempUnit}>
                   <RefreshCw />
@@ -40,16 +44,18 @@ const WeatherDisplay = () => {
                 </Button>
               </div>
             </div>
-            <div className="weather-main-icon">
-              {weatherData.weather[0].main.includes("clear") ? (
-                <Sun className="weather-icon" />
-              ) : weatherData.weather[0].main.includes("Clouds") ? (
-                <Cloud className="weather-icon" />
-              ) : weatherData.weather[0].main === "Rain" ? (
-                <CloudDrizzle className="weather-icon" />
-              ) : (
-                <Wind />
-              )}
+            <div className="weather-main-icon ">
+              <div>
+                {weatherData.weather[0].main.includes("clear") ? (
+                  <Sun className="weather-icon" />
+                ) : weatherData.weather[0].main.includes("Clouds") ? (
+                  <Cloud className="weather-icon" />
+                ) : weatherData.weather[0].main === "Rain" ? (
+                  <CloudDrizzle className="weather-icon" />
+                ) : (
+                  <Wind />
+                )}
+              </div>
             </div>
 
             <div className="weather-info">
@@ -59,10 +65,12 @@ const WeatherDisplay = () => {
                 {tempUnit}
               </div>
               <div className="day">
-                {new Date(weatherData.dt * 1000).toLocaleDateString([], {
-                  day: "numeric",
-                  weekday: "long",
-                })}
+                {
+                  convertToLocalTime(
+                    weatherData.dt,
+                    weatherData.timezone
+                  ).split(",")[0]
+                }
               </div>
               <div className="details">
                 <p>

@@ -21,7 +21,7 @@
  */
 .weather-container {
   font-family: Poppins, Arial, sans-serif;
-  color: #f3f3f3;
+  /* color: #f3f3f3; */
 }
 
 .weather-header {
@@ -40,6 +40,8 @@
 }
 
 .weather-main-icon {
+  display: flex;
+  justify-content: center;
   text-align: center;
   font-size: 4rem;
   margin-top: 1rem;
