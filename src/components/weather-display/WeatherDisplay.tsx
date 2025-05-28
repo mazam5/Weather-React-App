@@ -7,7 +7,7 @@ import useInput from "@/hooks/useInput";
 
 const WeatherDisplay = () => {
   const weatherState = useAppSelector((state) => state.weather);
-  const { weatherData, forecastData, isLoading } = weatherState;
+  const { weatherData, forecastData, isLoading, error } = weatherState;
   const { convertToLocalTime } = useInput();
 
   const [isCelsius, setIsCelsius] = useState(true);
@@ -22,7 +22,7 @@ const WeatherDisplay = () => {
   return (
     <div>
       {isLoading && <p>Loading...</p>}
-      {weatherData && (
+      {weatherData && !error && (
         <>
           <div className="weather-container" id="weatherDisplay">
             <div className="weather-header">

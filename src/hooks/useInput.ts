@@ -58,13 +58,19 @@ const useInput = () => {
         dispatch(setError("City not found"));
         return;
       }
+
       dispatch(resetWeatherDisplay());
       dispatch(setWeatherData(weatherData));
       localStorage.setItem("weatherData", JSON.stringify(weatherData));
       dispatch(setError(null));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Weather fetch error:", error);
-      dispatch(setError("City not found"));
+      if (typeof error === "object" && error !== null && "response" in error) {
+        dispatch(setError("City not found"));
+      } else {
+        dispatch(setError("No internet connection"));
+      }
+      return; // Stop further execution
     }
 
     try {
@@ -83,9 +89,13 @@ const useInput = () => {
       dispatch(setForecastData(forecastData));
       localStorage.setItem("forecastData", JSON.stringify(forecastData));
       dispatch(setError(null));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Forecast fetch error:", error);
-      dispatch(setError("City not found"));
+      if (typeof error === "object" && error !== null && "response" in error) {
+        dispatch(setError("No internet connection"));
+      } else {
+        dispatch(setError("City not found"));
+      }
     }
   };
 
